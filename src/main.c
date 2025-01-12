@@ -48,8 +48,17 @@ static int parse_options(int argc, char *argv[])
         }
 
         if (optind >= argc) {
-                perror("missing input files");
-                return 1;
+                char path[4096];
+                getcwd(path, 4096);
+                opts.path = (char**)malloc(2 * sizeof(char*));
+                if (opts.path == NULL) {
+                        perror("error allocating memory");
+                        return 1;
+                }
+
+                opts.path[0] = path;
+
+                return 0;
         }
 
         opts.path = (char**)malloc((argc - optind + 1) * sizeof(char*));
