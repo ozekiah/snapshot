@@ -1,6 +1,6 @@
 #ifndef SNAPSHOT_H
-#define SNAPSHTO_H
+#define SNAPSHOT_H
 
-void create_snapshot();
+int create_snapshot();
 
 #endif
