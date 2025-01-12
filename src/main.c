@@ -5,6 +5,7 @@
 #include <getopt.h>
 
 #include "main.h"
+#include "snapshot.h"
 
 #define PROGRAM_NAME "Checkpoint"
 #define AUTHOR "ozekiah"
@@ -29,13 +30,18 @@ static int parse_options(int argc, char *argv[])
         while ((opt = getopt_long(argc, argv, "m:h", long_options, NULL)) != -1) {
                 switch (opt) {
                 case 'm':
-                        if (strcmp(optarg, "save") == 0) {
-                                opts.mode = MODE_SAVE;
+                        if (strcmp(optarg, "create") == 0) {
+                                opts.mode = MODE_CREATE;
                         } else if (strcmp(optarg, "restore") == 0) {
                                 opts.mode = MODE_RESTORE;
                         } else if (strcmp(optarg, "discard") == 0) {
                                 opts.mode = MODE_DISCARD;
-                        }
+                        }  else if (strcmp(optarg, "list") == 0) {
+                                opts.mode = MODE_LIST;
+                        }  else if (strcmp(optarg, "compare") == 0) {
+                                opts.mode = MODE_COMPARE;
+                        } 
+
                         break;
                 case 'h':
                         opts.help = 1;
@@ -102,7 +108,6 @@ void print_args()
         printf("Mode: %d\n", opts.mode);
 }
 
-
 int main(int argc, char *argv[])
 {
         if (parse_options(argc, argv) != 0) {
@@ -112,13 +117,27 @@ int main(int argc, char *argv[])
 
         print_args();
 
+        /* handle options */
         if (opts.help) {
                 print_help();
                 return 0;
         }
+
+        switch (opts.mode) {
+        case MODE_CREATE:
+                create_snapshot();
+                break;
+        case MODE_RESTORE:
+                break;
+        case MODE_DISCARD:
+                break;
+        case MODE_LIST:
+                break;
+        case MODE_COMPARE:
+                break;
+        default:
+                print_help();
+        } 
         
-
-        /* handle options */
-
         return 0;
 }
