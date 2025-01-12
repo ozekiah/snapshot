@@ -9,9 +9,11 @@ static void print_help();
 static void print_usage();
 
 enum mode {
-       MODE_SAVE,
+       MODE_CREATE,
        MODE_RESTORE,
-       MODE_DISCARD
+       MODE_DISCARD,
+       MODE_LIST,
+       MODE_COMPARE
 };
 
 struct options {
