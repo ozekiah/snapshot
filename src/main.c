@@ -117,7 +117,6 @@ int main(int argc, char *argv[])
 
         print_args();
 
-        /* handle options */
         if (opts.help) {
                 print_help();
                 return 0;
