@@ -8,10 +8,16 @@ extern struct options opts;
 static void print_help();
 static void print_usage();
 
+enum mode {
+       MODE_SAVE,
+       MODE_RESTORE,
+       MODE_DISCARD
+};
+
 struct options {
-    char **path;
-    int mode;
-    int help;
+        char **path;
+        enum mode mode;
+        int help;
 };
 
 #endif

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <getopt.h>
 
@@ -28,7 +29,13 @@ static int parse_options(int argc, char *argv[])
         while ((opt = getopt_long(argc, argv, "m:h", long_options, NULL)) != -1) {
                 switch (opt) {
                 case 'm':
-                        opts.mode = 1;
+                        if (strcmp(optarg, "save") == 0) {
+                                opts.mode = MODE_SAVE;
+                        } else if (strcmp(optarg, "restore") == 0) {
+                                opts.mode = MODE_RESTORE;
+                        } else if (strcmp(optarg, "discard") == 0) {
+                                opts.mode = MODE_DISCARD;
+                        }
                         break;
                 case 'h':
                         opts.help = 1;
@@ -69,12 +76,23 @@ static void print_usage(const char *program_name)
         printf("Usage: %s [-v] [-m mode] [-h help] [path, path, ...]\n", program_name);
 }
 
-size_t files_count() 
+size_t path_count() 
 {
         size_t count = 0;
         while (opts.path[count] != NULL) count++;
         return count;
 }
+
+void print_args() 
+{
+        printf("Paths: \n");
+        for (int i = 0; i < path_count(); i++) {
+                printf("    %s\n", opts.path[i]);
+        }
+
+        printf("Mode: %d\n", opts.mode);
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -83,10 +101,13 @@ int main(int argc, char *argv[])
                 return 1;
         }
 
+        print_args();
+
         if (opts.help) {
                 print_help();
                 return 0;
         }
+        
 
         /* handle options */
 
