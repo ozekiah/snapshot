@@ -4,7 +4,8 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#include "main.h" #include "snapshot.h"
+#include "main.h"
+#include "snapshot.h"
 #include "config.h"
 
 #define PROGRAM_NAME "Checkpoint"

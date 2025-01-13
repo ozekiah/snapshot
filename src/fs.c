@@ -7,7 +7,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-static void add_file_to_archive(struct archive *a, const char *path, const char *base) {
+static void add_file_to_archive(struct archive *a, const char *path, const char *base)
+{
         struct archive_entry *entry;
         struct stat st;
         char fullpath[1024];
@@ -21,8 +22,13 @@ static void add_file_to_archive(struct archive *a, const char *path, const char 
         entry = archive_entry_new();
         archive_entry_set_pathname(entry, path);
         archive_entry_set_size(entry, st.st_size);
-        archive_entry_set_filetype(entry, st.st_mode);
         archive_entry_set_perm(entry, st.st_mode & 0777);
+
+        if (S_ISREG(st.st_mode)) {
+                archive_entry_set_filetype(entry, AE_IFREG);
+        } else if (S_ISDIR(st.st_mode)) {
+                archive_entry_set_filetype(entry, AE_IFDIR);
+        }
 
         archive_write_header(a, entry);
 
@@ -54,13 +60,18 @@ static void add_directory_to_archive(struct archive *a, const char *base, const 
                 return;
         }
 
+        printf("Opening directory: %s\n", dir);
+
         while ((entry = readdir(dp)) != NULL) {
                 if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
                         continue;
                 }
 
                 snprintf(path, sizeof(path), "%s/%s", dir, entry->d_name);
+                printf("Processing entry: %s\n", path);
+
                 if (entry->d_type == DT_DIR) {
+                        add_file_to_archive(a, path + strlen(base) + 1, base);
                         add_directory_to_archive(a, base, path);
                 } else {
                         add_file_to_archive(a, path + strlen(base) + 1, base);
@@ -74,7 +85,7 @@ int create_tar_xz(const char *src, const char *dst)
 {
         struct archive *a = archive_write_new();
         archive_write_set_format_pax_restricted(a);
-        archive_write_add_filter_xz(a);
+        archive_write_add_filter_xz(a);  
 
         if (archive_write_open_filename(a, dst) != ARCHIVE_OK) {
                 fprintf(stderr, "Failed to open output file: %s\n", archive_error_string(a));
@@ -89,4 +100,10 @@ int create_tar_xz(const char *src, const char *dst)
 
         printf("Created .tar.xz: %s\n", dst);
         return 0;
+}
+
+int path_exists(const char *path) 
+{
+        struct stat buffer;
+        return (stat(path, &buffer) == 0);
 }
