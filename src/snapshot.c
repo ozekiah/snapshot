@@ -1,4 +1,5 @@
 #include "snapshot.h"
+#include "fs.h"
 
 int create_snapshot()
 {
