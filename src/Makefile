@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -g
 
-TARGET = checkpoint
+TARGET = snapshot
 LIBS = -larchive -lyaml
 SRCS = main.c snapshot.c config.c fs.c
 OBJS = $(SRCS:.c=.o)
