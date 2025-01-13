@@ -1,9 +1,11 @@
 #ifndef MAIN_H
 #define MAIN_H
-
 #define ARRAY_LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 
+#include "config.h"
+
 extern struct options opts;
+extern struct config config;
 
 static void print_help();
 static void print_usage();

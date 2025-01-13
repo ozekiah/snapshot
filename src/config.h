@@ -7,4 +7,7 @@ struct config {
         int limit;
 };
 
+void serialize_config(const struct config *cfg, const char *filename);
+void deserialize_config(struct config *cfg, const char *filename);
+
 #endif
