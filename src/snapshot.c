@@ -6,8 +6,10 @@
 
 int create_snapshot()
 {
-        const char *source_directory = "/home/brem/Programming/snapshot/src";
-        const char *destination_file = "/etc/snapshot/snapshots/test15.tar.xz";
+        char *source_directory = opts.path[0];
+
+        char destination_file[4096];
+        snprintf(destination_file, sizeof(destination_file), "%s/test1.tar.xz", config.path);
 
         int result = create_tar_xz(source_directory, destination_file);
         if (result != 0) {
