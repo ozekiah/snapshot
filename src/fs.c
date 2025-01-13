@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-void add_file_to_archive(struct archive *a, const char *path, const char *base) {
+static void add_file_to_archive(struct archive *a, const char *path, const char *base) {
         struct archive_entry *entry;
         struct stat st;
         char fullpath[1024];
@@ -42,7 +42,7 @@ void add_file_to_archive(struct archive *a, const char *path, const char *base) 
         archive_entry_free(entry);
 }
 
-void add_directory_to_archive(struct archive *a, const char *base, const char *dir) 
+static void add_directory_to_archive(struct archive *a, const char *base, const char *dir) 
 {
         DIR *dp;
         struct dirent *entry;
