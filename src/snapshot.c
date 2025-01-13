@@ -6,8 +6,8 @@
 
 int create_snapshot()
 {
-        const char *source_directory = "/home/brem/Programming/checkpoint/src";
-        const char *destination_file = "/etc/checkpoint/snapshots/test15.tar.xz";
+        const char *source_directory = "/home/brem/Programming/snapshot/src";
+        const char *destination_file = "/etc/snapshot/snapshots/test15.tar.xz";
 
         int result = create_tar_xz(source_directory, destination_file);
         if (result != 0) {
