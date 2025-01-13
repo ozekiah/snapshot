@@ -4,13 +4,14 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#include "main.h"
-#include "snapshot.h"
+#include "main.h" #include "snapshot.h"
+#include "config.h"
 
 #define PROGRAM_NAME "Checkpoint"
 #define AUTHOR "ozekiah"
 #define LICENSE "GNU GPL v2.0"
 
+struct config config;
 struct options opts = {
         .path = NULL,
         .mode = 0,
@@ -110,6 +111,9 @@ void print_args()
 
 int main(int argc, char *argv[])
 {
+        // TODO: check that the config file exists and the file structure is correct
+        (void)deserialize_config(&config, "/etc/checkpoint/config.yaml");
+
         if (parse_options(argc, argv) != 0) {
                 print_usage(argv[0]);
                 return 1;
