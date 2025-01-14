@@ -3,7 +3,7 @@ CFLAGS = -Wall -g
 
 TARGET = snapshot
 LIBS = -larchive -lyaml
-SRCS = main.c snapshot.c config.c fs.c
+SRCS = main.c snapshot.c config.c fs.c utils.c
 OBJS = $(SRCS:.c=.o)
 
 $(TARGET): $(OBJS)
