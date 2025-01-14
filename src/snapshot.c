@@ -3,6 +3,7 @@
 #include "snapshot.h"
 #include "fs.h"
 #include "main.h"
+#include "utils.h"
 
 int create_snapshot()
 {
@@ -11,13 +12,12 @@ int create_snapshot()
 
         char destination_dir[4096];
         snprintf(destination_dir, sizeof(destination_dir), "%s/%ld", config.path, source_inode);
-        if (mkdir(destination_dir, 0777) == -1) {
-                perror("mkdir");
-                return 1;
-        }
+        mkdir(destination_dir, 0777);
 
         char destination_file[4096];
-        snprintf(destination_file, sizeof(destination_file), "%s/testfile.tar.xz", destination_dir);
+        char timestamp_str[26];
+        timestamp(timestamp_str);
+        snprintf(destination_file, sizeof(destination_file), "%s/%s", destination_dir, timestamp_str);
 
         int result = create_tar_xz(source_dir, destination_file);
         if (result != 0) {
@@ -27,5 +27,3 @@ int create_snapshot()
 
         return 0;
 }
-
-
