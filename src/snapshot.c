@@ -6,10 +6,20 @@
 
 int create_snapshot()
 {
-        const char *source_directory = "/home/brem/Programming/snapshot/src";
-        const char *destination_file = "/etc/snapshot/snapshots/test15.tar.xz";
+        char *source_dir = opts.path[0];
+        long int source_inode = get_dir_inode(source_dir);
 
-        int result = create_tar_xz(source_directory, destination_file);
+        char destination_dir[4096];
+        snprintf(destination_dir, sizeof(destination_dir), "%s/%ld", config.path, source_inode);
+        if (mkdir(destination_dir, 0777) == -1) {
+                perror("mkdir");
+                return 1;
+        }
+
+        char destination_file[4096];
+        snprintf(destination_file, sizeof(destination_file), "%s/testfile.tar.xz", destination_dir);
+
+        int result = create_tar_xz(source_dir, destination_file);
         if (result != 0) {
                 fprintf(stderr, "Error creating tar.xz archive\n");
                 return 1;

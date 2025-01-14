@@ -113,7 +113,7 @@ void print_args()
 int main(int argc, char *argv[])
 {
         // TODO: check that the config file exists and the file structure is correct
-        (void)deserialize_config(&config, "/etc/checkpoint/config.yaml");
+        (void)deserialize_config(&config, "/etc/snapshot/config.yaml");
 
         if (parse_options(argc, argv) != 0) {
                 print_usage(argv[0]);

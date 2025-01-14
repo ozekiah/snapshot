@@ -102,6 +102,17 @@ int create_tar_xz(const char *src, const char *dst)
         return 0;
 }
 
+long int get_dir_inode(const char *dir_path)
+{
+        struct stat dir_stat;
+        if (stat(dir_path, &dir_stat) == -1) {
+                perror("stat");
+                return -1;
+        }
+
+        return dir_stat.st_ino;
+}
+
 int path_exists(const char *path) 
 {
         struct stat buffer;
