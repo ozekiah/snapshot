@@ -5,13 +5,8 @@
 #include <sys/stat.h>
 #include <time.h>
 
-enum blob_type {
-        BLOB_FILE,
-        BLOB_TREE
-};
-
 struct blob {
-        enum blob_type type;
+        char type[7]; 
         size_t size;
         unsigned char *data;
         mode_t mode;
@@ -25,7 +20,7 @@ struct blob {
 
 struct tree_entry {
         char mode[7];
-        enum blob_type type;
+        char type[7]; 
         char name[256];
         unsigned char hash[20];
         struct tree_entry *next;
@@ -33,7 +28,7 @@ struct tree_entry {
 };
 
 struct tree {
-        enum blob_type type;
+        char type[7]; 
         size_t entry_count;
         struct tree_entry *entries;
 };

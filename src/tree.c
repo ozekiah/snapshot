@@ -61,7 +61,7 @@ struct tree_entry *create_tree_entry(const char *name, struct blob *blob) {
         entry->mode[4] = '4';
         entry->mode[5] = '4'; 
         entry->mode[6] = '\0';
-        entry->type = BLOB_FILE;
+        strcpy(entry->type, "blob");
         memcpy(entry->hash, "dummysha1hashofblob", 20);  
         entry->blob = blob;
         entry->next = NULL;
@@ -77,7 +77,7 @@ struct tree *create_tree(struct tree_entry *entry)
                 return NULL;
         }
 
-        tree->type = BLOB_TREE;
+        strcpy(tree->type, "tree");
         tree->entry_count = 1;
         tree->entries = entry;
 
@@ -99,7 +99,7 @@ struct tree *form_tree(const char *dir_path)
                 return NULL;
         }
 
-        root_tree->type = BLOB_TREE;
+        strcpy(root_tree->type, "tree");
         root_tree->entry_count = 0;
         root_tree->entries = NULL;
 
@@ -123,7 +123,7 @@ struct tree *form_tree(const char *dir_path)
                 if (S_ISDIR(st.st_mode)) {
                         struct tree *subdir_tree = form_tree(full_path);
                         struct tree_entry *subdir_entry = create_tree_entry(entry->d_name, NULL);
-                        subdir_entry->type = BLOB_TREE;
+                        strcpy(subdir_entry->type, "tree");
                         subdir_entry->blob = NULL;
                         subdir_entry->next = NULL;
 
@@ -159,12 +159,12 @@ int restore_directory(struct tree *tree, const char *dir_path) {
                 char full_path[1024];
                 snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry->name);
 
-                if (entry->type == BLOB_TREE) {
+                if (strcpy(entry->type, "tree")) {
                         mkdir(full_path, 0777);
                         if (restore_directory((struct tree*)entry->blob, full_path) != 0) {
                                 return -1;
                         }
-                } else if (entry->type == BLOB_FILE) {
+                } else if (strcpy(entry->type, "blob")) {
                         FILE *file = fopen(full_path, "wb");
                         if (!file) {
                                 perror("fopen");
