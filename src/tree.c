@@ -185,3 +185,98 @@ int restore_directory(struct tree *tree, const char *dir_path) {
 
         return 0;
 }
+
+int serialize_tree(FILE *out, struct tree *tree)
+{
+        if (tree == NULL) {
+                return -1;
+        }
+
+        fwrite(&tree->type, sizeof(tree->type), 1, out);
+        fwrite(&tree->entry_count, sizeof(tree->entry_count), 1, out);
+
+        struct tree_entry *entry = tree->entries;
+        while (entry) {
+                fwrite(entry->mode, sizeof(entry->mode), 1, out);
+                fwrite(&entry->type, sizeof(entry->type), 1, out);
+                fwrite(entry->name, sizeof(entry->name), 1, out);
+                fwrite(entry->hash, sizeof(entry->hash), 1, out);
+
+                if (strcmp(entry->type, "blob") == 0) {
+                        if (entry->blob != NULL) {
+                                fwrite(&entry->blob->size, sizeof(entry->blob->size), 1, out);
+                                fwrite(entry->blob->data, entry->blob->size, 1, out);
+                                fwrite(&entry->blob->mode, sizeof(entry->blob->mode), 1, out);
+                                fwrite(&entry->blob->uid, sizeof(entry->blob->uid), 1, out);
+                                fwrite(&entry->blob->gid, sizeof(entry->blob->gid), 1, out);
+                                fwrite(&entry->blob->atime, sizeof(entry->blob->atime), 1, out);
+                                fwrite(&entry->blob->mtime, sizeof(entry->blob->mtime), 1, out);
+                                fwrite(&entry->blob->ctime, sizeof(entry->blob->ctime), 1, out);
+                        }
+                }
+                else if (strcmp(entry->type, "tree") == 0) {
+                        if (entry->blob != NULL) {
+                                serialize_tree(out, (struct tree*)entry->blob);  // Properly cast to struct tree
+                        }
+                }
+
+                entry = entry->next;
+        }
+
+        return 0;
+}
+
+int deserialize_tree(FILE *in, struct tree **tree) 
+{
+        *tree = malloc(sizeof(struct tree));
+        if (!*tree) {
+                perror("malloc");
+                return -1;
+        }
+
+        fread(&(*tree)->type, sizeof((*tree)->type), 1, in);
+        fread(&(*tree)->entry_count, sizeof((*tree)->entry_count), 1, in);
+
+        struct tree_entry *last_entry = NULL;
+        while (1) {
+                struct tree_entry *entry = malloc(sizeof(struct tree_entry));
+                if (!entry) {
+                        perror("malloc");
+                        return -1;
+                }
+
+                fread(entry->mode, sizeof(entry->mode), 1, in);
+                fread(&entry->type, sizeof(entry->type), 1, in);
+                fread(entry->name, sizeof(entry->name), 1, in);
+                fread(entry->hash, sizeof(entry->hash), 1, in);
+
+                if (strcmp(entry->type, "blob") == 0) {
+                        fread(&entry->blob->size, sizeof(entry->blob->size), 1, in);
+                        entry->blob->data = malloc(entry->blob->size);
+                        fread(entry->blob->data, entry->blob->size, 1, in);
+                        fread(&entry->blob->mode, sizeof(entry->blob->mode), 1, in);
+                        fread(&entry->blob->uid, sizeof(entry->blob->uid), 1, in);
+                        fread(&entry->blob->gid, sizeof(entry->blob->gid), 1, in);
+                        fread(&entry->blob->atime, sizeof(entry->blob->atime), 1, in);
+                        fread(&entry->blob->mtime, sizeof(entry->blob->mtime), 1, in);
+                        fread(&entry->blob->ctime, sizeof(entry->blob->ctime), 1, in);
+                }
+                else if (strcmp(entry->type, "tree") == 0) {
+                        deserialize_tree(in, (struct tree **)&entry->blob);
+                }
+
+                if (last_entry) {
+                        last_entry->next = entry;
+                } else {
+                        (*tree)->entries = entry;
+                }
+
+                last_entry = entry;
+
+                if (--(*tree)->entry_count == 0) {
+                        break;
+                }
+        }
+
+        return 0;
+}
