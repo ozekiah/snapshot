@@ -125,6 +125,7 @@ struct tree *form_tree(const char *dir_path)
                         struct tree_entry *subdir_entry = create_tree_entry(entry->d_name, NULL);
                         strcpy(subdir_entry->type, "tree");
                         subdir_entry->blob = NULL;
+                        subdir_entry->subtree = subdir_tree;
                         subdir_entry->next = NULL;
 
                         if (last_entry) {
@@ -144,6 +145,7 @@ struct tree *form_tree(const char *dir_path)
                         } else {
                                 root_tree->entries = file_entry;
                         }
+
                         last_entry = file_entry;
                         root_tree->entry_count++;
                 }
@@ -159,12 +161,12 @@ int restore_directory(struct tree *tree, const char *dir_path) {
                 char full_path[1024];
                 snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry->name);
 
-                if (strcpy(entry->type, "tree")) {
+                if (strcmp(entry->type, "tree")) {
                         mkdir(full_path, 0777);
-                        if (restore_directory((struct tree*)entry->blob, full_path) != 0) {
+                        if (restore_directory(entry->subtree, full_path) != 0) {
                                 return -1;
                         }
-                } else if (strcpy(entry->type, "blob")) {
+                } else if (strcmp(entry->type, "blob")) {
                         FILE *file = fopen(full_path, "wb");
                         if (!file) {
                                 perror("fopen");
@@ -216,7 +218,7 @@ int serialize_tree(FILE *out, struct tree *tree)
                 }
                 else if (strcmp(entry->type, "tree") == 0) {
                         if (entry->blob != NULL) {
-                                serialize_tree(out, (struct tree*)entry->blob);  // Properly cast to struct tree
+                                serialize_tree(out, entry->subtree);
                         }
                 }
 
@@ -262,7 +264,8 @@ int deserialize_tree(FILE *in, struct tree **tree)
                         fread(&entry->blob->ctime, sizeof(entry->blob->ctime), 1, in);
                 }
                 else if (strcmp(entry->type, "tree") == 0) {
-                        deserialize_tree(in, (struct tree **)&entry->blob);
+                        entry->subtree = malloc(sizeof(struct tree));
+                        deserialize_tree(in, &entry->subtree);
                 }
 
                 if (last_entry) {

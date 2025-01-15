@@ -4,6 +4,7 @@
 #include "fs.h"
 #include "main.h"
 #include "utils.h"
+#include "tree.h"
 
 int create_snapshot()
 {
