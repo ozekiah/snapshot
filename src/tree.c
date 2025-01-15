@@ -155,6 +155,53 @@ struct tree *form_tree(const char *dir_path)
         return root_tree;
 }
 
+void free_tree_entry(struct tree_entry *entry) 
+{
+        if (!entry) return;
+
+        if (entry->subtree) {
+                free_tree(entry->subtree);
+                free(entry->subtree);
+        }
+
+        if (entry->blob) {
+                if (entry->blob->data) {
+                        free(entry->blob->data);
+                }
+
+                free(entry->blob);
+        }
+
+        if (entry->delta) {
+                if (entry->delta->added_data) {
+                        free(entry->delta->added_data);
+                }
+                if (entry->delta->deleted_data) {
+                        free(entry->delta->deleted_data);
+                }
+
+                free(entry->delta);
+        }
+
+        free(entry);
+}
+
+void free_tree_entries(struct tree_entry *entry) 
+{
+        while (entry) {
+                struct tree_entry *next = entry->next;
+                free_tree_entry(entry);
+                entry = next;
+        }
+}
+
+void free_tree(struct tree *t) {
+    if (!t) return;
+    
+    free_tree_entries(t->entries);
+    free(t);
+}
+
 int restore_directory(struct tree *tree, const char *dir_path) {
         struct tree_entry *entry = tree->entries;
         while (entry) {
