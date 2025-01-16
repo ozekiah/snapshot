@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "delta.h"
+#include <openssl/sha.h>
 
 struct blob {
         char type[5]; 
@@ -21,12 +21,11 @@ struct blob {
         char *link_target;
 };
 
-
 struct tree_entry {
         char mode[7];
         char type[7]; 
         char name[256];
-        unsigned char hash[20];
+        unsigned char hash[SHA_DIGEST_LENGTH];
         struct file_delta *delta;
         struct tree *subtree;
         struct tree_entry *next;
@@ -36,6 +35,7 @@ struct tree_entry {
 struct tree {
         char type[5]; 
         size_t entry_count;
+        unsigned char hash[SHA_DIGEST_LENGTH];
         struct tree_entry *entries;
 };
 
@@ -48,5 +48,7 @@ void free_tree_entries(struct tree_entry *entry);
 void free_tree(struct tree *t);
 int serialize_tree(FILE *out, struct tree *tree);
 int deserialize_tree(FILE *in, struct tree **tree);
+int restore_directory(struct tree *tree, const char *dir_path);
+struct tree_entry *clone_tree_entry(const struct tree_entry *original);
 
 #endif
