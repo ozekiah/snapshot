@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <limits.h>
 
 #include "main.h"
 #include "snapshot.h"
@@ -15,59 +16,99 @@
 struct config config;
 struct options opts = {
         .path = NULL,
-        .mode = 0,
         .store = 0,
         .restore = 0,
+        .revision = 0,
         .discard = 0,
         .list = 0,
         .compare = 0,
+        .version = 0,
         .help = 0
 };
+
+static int get_path(int argc)
+{
+        if (optind >= argc) {
+                char cwd[PATH_MAX];
+                if (getcwd(cwd, PATH_MAX) == NULL) {
+                        perror("getcwd");
+                        return 1;
+                }
+                
+                opts.path = strdup(cwd);
+                if (opts.path == NULL) {
+                        perror("strdup");
+                        return 1;
+                }
+                return 0;
+        }
+
+        opts.path = strdup(optarg);
+        if (opts.path == NULL) {
+                perror("strdup");
+                return 1;
+        }
+        
+        return 0;
+}
 
 static int parse_options(int argc, char *argv[])
 {
         int opt;
 
         static struct option long_options[] = {
-                {"mode", required_argument, 0, 'm'},
                 {"store", required_argument, 0, 's'},
                 {"restore", required_argument, 0, 'r'},
+                {"revision", required_argument, 0, 'R'},
                 {"discard", required_argument, 0, 'd'},
                 {"list", required_argument, 0, 'l'},
                 {"compare", required_argument, 0, 'c'},
+                {"version", no_argument, 0, 'v'},
                 {"help", no_argument, 0, 'h'},
                 {0, 0, 0, 0}
         };
 
-        while ((opt = getopt_long(argc, argv, "msrdlc:h", long_options, NULL)) != -1) {
+        while ((opt = getopt_long(argc, argv, "s:r:R:d:l:c:h", long_options, NULL)) != -1) {
                 switch (opt) {
-                case 'm':
-                        if (strcmp(optarg, "create") == 0) {
-                                opts.mode = MODE_CREATE;
-                        } else if (strcmp(optarg, "restore") == 0) {
-                                opts.mode = MODE_RESTORE;
-                        } else if (strcmp(optarg, "discard") == 0) {
-                                opts.mode = MODE_DISCARD;
-                        }  else if (strcmp(optarg, "list") == 0) {
-                                opts.mode = MODE_LIST;
-                        }  else if (strcmp(optarg, "compare") == 0) {
-                                opts.mode = MODE_COMPARE;
-                        } 
-
-                        break;
                 case 's':
+                        if (get_path(argc) != 0) {
+                            return 1;
+                        }
                         opts.store = 1;
                         break;
                 case 'r':
+                        if (get_path(argc) != 0) {
+                            return 1;
+                        }
                         opts.restore = 1;
                         break;
+                case 'R':
+                        if (!optarg) {
+                            fprintf(stderr, "Error: revision requires an argument\n");
+                            return 1;
+                        }
+                        opts.revision = atoi(optarg);
+                        if (opts.revision < 0) {
+                            fprintf(stderr, "Error: invalid revision number\n");
+                            return 1;
+                        }
+                        break;
                 case 'd':
+                        if (get_path(argc) != 0) {
+                            return 1;
+                        }
                         opts.discard = 1;
                         break;
                 case 'l':
+                        if (get_path(argc) != 0) {
+                            return 1;
+                        }
                         opts.list = 1;
                         break;
                 case 'c':
+                        if (get_path(argc) != 0) {
+                            return 1;
+                        }
                         opts.compare = 1;
                         break;
                 case 'h':
@@ -76,35 +117,9 @@ static int parse_options(int argc, char *argv[])
                 default:
                         print_usage(argv[0]);
                         return 1;
-                
                 }
         }
 
-        if (optind >= argc) {
-                char path[4096];
-                getcwd(path, 4096);
-                opts.path = (char**)malloc(2 * sizeof(char*));
-                if (opts.path == NULL) {
-                        perror("error allocating memory");
-                        return 1;
-                }
-
-                opts.path[0] = path;
-
-                return 0;
-        }
-
-        opts.path = (char**)malloc((argc - optind + 1) * sizeof(char*));
-        if (opts.path == NULL) {
-                perror("error allocing memory");
-                return 1;
-        }
-
-        for (int i = optind; i < argc; i++) {
-                opts.path[i - optind] = argv[i];
-        }
-
-        opts.path[argc - optind] = NULL;
         return 0;
 }
 
@@ -118,21 +133,16 @@ static void print_usage(const char *program_name)
         printf("Usage: %s [-v] [-m mode] [-h help] [path, path, ...]\n", program_name);
 }
 
-size_t path_count() 
-{
-        size_t count = 0;
-        while (opts.path[count] != NULL) count++;
-        return count;
-}
-
 void print_args() 
 {
-        printf("Paths: \n");
-        for (int i = 0; i < path_count(); i++) {
-                printf("    %s\n", opts.path[i]);
-        }
-
-        printf("Mode: %d\n", opts.mode);
+        printf("Args:\n");
+        printf("    Path: %s\n", opts.path);
+        printf("    Store: %d\n", opts.store);
+        printf("    Restore: %d\n", opts.restore);
+        printf("    Revision: %d\n", opts.revision);
+        printf("    Discard: %d\n", opts.discard);
+        printf("    List: %d\n", opts.list);
+        printf("    Compare: %d\n", opts.compare);
 }
 
 int main(int argc, char *argv[])
@@ -152,21 +162,14 @@ int main(int argc, char *argv[])
                 return 0;
         }
 
-        switch (opts.mode) {
-        case MODE_CREATE:
-                create_snapshot(opts.path[0]);
-                break;
-        case MODE_RESTORE:
-                break;
-        case MODE_DISCARD:
-                break;
-        case MODE_LIST:
-                break;
-        case MODE_COMPARE:
-                break;
-        default:
-                print_help();
+        if (opts.store) {
+                create_snapshot(opts.path);
         } 
-        
+
+        if (opts.restore) {
+                restore_snapshot(opts.path, opts.revision);
+        }
+
+        free(opts.path);
         return 0;
 }
