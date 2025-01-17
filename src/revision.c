@@ -3,12 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include "revision.h"
+#include <sys/stat.h>
+#include <errno.h>
 
+#include "revision.h"
 #include "delta.h"
 #include "tree.h"
 
-struct revision *create_base_revision(const char *dir_path) {
+struct revision *create_base_revision(const char *dir_path) 
+{
         struct revision *rev = malloc(sizeof(struct revision));
         if (!rev) {
                 perror("malloc");
@@ -68,7 +71,8 @@ struct revision *create_base_revision(const char *dir_path) {
         return rev;
 }
 
-struct revision *create_delta_revision(struct revision *base, const char *current_dir) {
+struct revision *create_delta_revision(const char *rev_dir, struct revision *base, const char *current_dir) 
+{
         if (!base || !current_dir) return NULL;
 
         struct revision *rev = malloc(sizeof(struct revision));
@@ -83,7 +87,19 @@ struct revision *create_delta_revision(struct revision *base, const char *curren
                 return NULL;
         }
 
-        rev->version = base->version + 1;
+        int next_version = 1;
+        char rev_path[PATH_MAX];
+        while (1) {
+                snprintf(rev_path, sizeof(rev_path), "%s/revision_%d", rev_dir, next_version);
+                FILE *test = fopen(rev_path, "r");
+                if (test == NULL) {
+                        break;
+                }
+                fclose(test);
+                next_version++;
+        }
+
+        rev->version = next_version;
         rev->base_tree = NULL;
         rev->delta = calculate_tree_delta(base->base_tree, current_tree);
         rev->base_version = base->version;
@@ -143,7 +159,8 @@ struct revision *create_delta_revision(struct revision *base, const char *curren
         return rev;
 }
 
-int save_revision_to_file(const char *filepath, struct revision *rev) {
+int save_revision_to_file(const char *filepath, struct revision *rev)
+{
         if (!filepath || !rev) return -1;
 
         FILE *f = fopen(filepath, "wb");
@@ -175,7 +192,8 @@ int save_revision_to_file(const char *filepath, struct revision *rev) {
         return 0;
 }
 
-struct revision *load_revision_from_file(const char *filepath) {
+struct revision *load_revision_from_file(const char *filepath) 
+{
         if (!filepath) return NULL;
 
         FILE *f = fopen(filepath, "rb");
@@ -218,7 +236,8 @@ struct revision *load_revision_from_file(const char *filepath) {
         return rev;
 }
 
-void free_revision(struct revision *rev) {
+void free_revision(struct revision *rev) 
+{
         if (!rev) return;
 
         if (rev->base_tree) {
@@ -233,15 +252,15 @@ void free_revision(struct revision *rev) {
 void print_usage(const char *program) 
 {
         fprintf(stderr, "Usage:\n");
-        fprintf(stderr, "  Save current state:   %s <directory>\n", program);
-        fprintf(stderr, "  Restore a revision:   %s -r <revision_number> <output_directory>\n", program);
+        fprintf(stderr, "  Save current state:   %s -s <revisions_dir> <directory>\n", program);
+        fprintf(stderr, "  Restore a revision:   %s -r <revisions_dir> <revision_number> <output_directory>\n", program);
 }
 
-int restore_specific_revision(int target_version, const char *output_dir) 
+int restore_specific_revision(const char *rev_dir, int target_version, const char *output_dir) 
 {
-        char rev_path[32];
-        snprintf(rev_path, sizeof(rev_path), "revision_%d", target_version);
-
+        char rev_path[PATH_MAX];
+        snprintf(rev_path, sizeof(rev_path), "%s/revision_%d", rev_dir, target_version);
+        
         struct revision *rev = load_revision_from_file(rev_path);
         if (!rev) {
                 fprintf(stderr, "Failed to load revision %d\n", target_version);
@@ -249,22 +268,21 @@ int restore_specific_revision(int target_version, const char *output_dir)
         }
 
         if (rev->base_tree) {
-                // Base revision - restore directly
                 if (restore_directory(rev->base_tree, output_dir) != 0) {
                         fprintf(stderr, "Failed to restore directory\n");
                         free_revision(rev);
                         return 1;
                 }
         } else {
-                // Delta revision - need to load base and apply deltas
-                struct revision *base = load_revision_from_file("revision_0");
+                char base_path[PATH_MAX];
+                snprintf(base_path, sizeof(base_path), "%s/revision_0", rev_dir);
+                struct revision *base = load_revision_from_file(base_path);
                 if (!base) {
                         fprintf(stderr, "Failed to load base revision\n");
                         free_revision(rev);
                         return 1;
                 }
 
-                // Clone the base tree
                 struct tree *working_tree = NULL;
                 FILE *tmp = tmpfile();
                 if (!tmp) {
@@ -280,8 +298,8 @@ int restore_specific_revision(int target_version, const char *output_dir)
 
                 // apply all deltas up to the target version
                 for (int i = 1; i <= target_version; i++) {
-                        char delta_path[32];
-                        snprintf(delta_path, sizeof(delta_path), "revision_%d", i);
+                        char delta_path[PATH_MAX];
+                        snprintf(delta_path, sizeof(delta_path), "%s/revision_%d", rev_dir, i);
                         struct revision *delta_rev = load_revision_from_file(delta_path);
                         if (!delta_rev) {
                                 fprintf(stderr, "Failed to load revision %d\n", i);
@@ -314,27 +332,35 @@ int restore_specific_revision(int target_version, const char *output_dir)
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
+    if (argc < 3) {
         print_usage(argv[0]);
+        return 1;
+    }
+
+    // check if revisions directory exists, create if it doesn't
+    const char *rev_dir = argv[2];
+    if (mkdir(rev_dir, 0777) < 0 && errno != EEXIST) {
+        perror("mkdir");
         return 1;
     }
 
     if (strcmp(argv[1], "-r") == 0) {
-        if (argc != 4) {
+        if (argc != 5) {
             print_usage(argv[0]);
             return 1;
         }
-        int revision = atoi(argv[2]);
-        return restore_specific_revision(revision, argv[3]);
+        int revision = atoi(argv[3]);
+        return restore_specific_revision(rev_dir, revision, argv[4]);
     }
 
-    if (argc != 2) {
+    if (strcmp(argv[1], "-s") != 0 || argc != 4) {
         print_usage(argv[0]);
         return 1;
     }
 
-    const char *dir_path = argv[1];
-    char base_path[] = "revision_0";
+    const char *dir_path = argv[3];
+    char base_path[PATH_MAX];
+    snprintf(base_path, sizeof(base_path), "%s/revision_0", rev_dir);
 
     if (access(base_path, F_OK) == -1) {
         struct revision *base = create_base_revision(dir_path);
@@ -349,25 +375,24 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
-        printf("Created base revision\n");
+        printf("Created base revision in %s\n", base_path);
         free_revision(base);
     } else {
-        // load base and create delta
         struct revision *base = load_revision_from_file(base_path);
         if (!base) {
             fprintf(stderr, "Failed to load base revision\n");
             return 1;
         }
 
-        struct revision *delta = create_delta_revision(base, dir_path);
+        struct revision *delta = create_delta_revision(rev_dir, base, dir_path);
         if (!delta) {
             fprintf(stderr, "Failed to create delta revision\n");
             free_revision(base);
             return 1;
         }
 
-        char delta_path[20];
-        snprintf(delta_path, sizeof(delta_path), "revision_%d", delta->version);
+        char delta_path[PATH_MAX];
+        snprintf(delta_path, sizeof(delta_path), "%s/revision_%d", rev_dir, delta->version);
         
         if (save_revision_to_file(delta_path, delta) != 0) {
             fprintf(stderr, "Failed to save delta revision\n");
@@ -376,7 +401,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
-        printf("Created delta revision %d\n", delta->version);
+        printf("Created delta revision %d in %s\n", delta->version, delta_path);
         free_revision(delta);
         free_revision(base);
     }
