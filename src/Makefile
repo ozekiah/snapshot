@@ -2,8 +2,8 @@ CC = gcc
 CFLAGS = -Wall -g
 
 TARGET = snapshot
-LIBS = -larchive -lyaml
-SRCS = main.c snapshot.c config.c fs.c utils.c
+LIBS = -larchive -lyaml -lcrypto
+SRCS = main.c snapshot.c config.c fs.c utils.c revision.c delta.c tree.c
 OBJS = $(SRCS:.c=.o)
 
 $(TARGET): $(OBJS)

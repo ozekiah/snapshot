@@ -331,7 +331,7 @@ int restore_specific_revision(const char *rev_dir, int target_version, const cha
         return 0;
 }
 
-int main(int argc, char *argv[]) {
+int __main(int argc, char *argv[]) {
     if (argc < 3) {
         print_usage(argv[0]);
         return 1;

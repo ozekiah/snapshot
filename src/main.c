@@ -8,7 +8,7 @@
 #include "snapshot.h"
 #include "config.h"
 
-#define PROGRAM_NAME "Checkpoint"
+#define PROGRAM_NAME "snapshot"
 #define AUTHOR "ozekiah"
 #define LICENSE "GNU GPL v2.0"
 
@@ -16,6 +16,11 @@ struct config config;
 struct options opts = {
         .path = NULL,
         .mode = 0,
+        .store = 0,
+        .restore = 0,
+        .discard = 0,
+        .list = 0,
+        .compare = 0,
         .help = 0
 };
 
@@ -25,11 +30,16 @@ static int parse_options(int argc, char *argv[])
 
         static struct option long_options[] = {
                 {"mode", required_argument, 0, 'm'},
+                {"store", required_argument, 0, 's'},
+                {"restore", required_argument, 0, 'r'},
+                {"discard", required_argument, 0, 'd'},
+                {"list", required_argument, 0, 'l'},
+                {"compare", required_argument, 0, 'c'},
                 {"help", no_argument, 0, 'h'},
                 {0, 0, 0, 0}
         };
 
-        while ((opt = getopt_long(argc, argv, "m:h", long_options, NULL)) != -1) {
+        while ((opt = getopt_long(argc, argv, "msrdlc:h", long_options, NULL)) != -1) {
                 switch (opt) {
                 case 'm':
                         if (strcmp(optarg, "create") == 0) {
@@ -44,6 +54,21 @@ static int parse_options(int argc, char *argv[])
                                 opts.mode = MODE_COMPARE;
                         } 
 
+                        break;
+                case 's':
+                        opts.store = 1;
+                        break;
+                case 'r':
+                        opts.restore = 1;
+                        break;
+                case 'd':
+                        opts.discard = 1;
+                        break;
+                case 'l':
+                        opts.list = 1;
+                        break;
+                case 'c':
+                        opts.compare = 1;
                         break;
                 case 'h':
                         opts.help = 1;
@@ -129,7 +154,7 @@ int main(int argc, char *argv[])
 
         switch (opts.mode) {
         case MODE_CREATE:
-                create_snapshot();
+                create_snapshot(opts.path[0]);
                 break;
         case MODE_RESTORE:
                 break;
