@@ -21,6 +21,11 @@ enum mode {
 struct options {
         char **path;
         enum mode mode;
+        int store;
+        int restore;
+        int discard;
+        int list;
+        int compare;
         int help;
 };
 
