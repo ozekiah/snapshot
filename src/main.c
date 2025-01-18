@@ -9,8 +9,8 @@
 #include "snapshot.h"
 #include "config.h"
 
-#define PROGRAM_NAME "snapshot"
-#define AUTHOR "ozekiah"
+#define PROGRAM_NAME "Snapshot"
+#define AUTHOR "Ozekiah"
 #define LICENSE "GNU GPL v2.0"
 
 struct config config;
@@ -125,12 +125,23 @@ static int parse_options(int argc, char *argv[])
 
 static void print_help()
 {
-
+        printf("%s - snapshot utility tool\n", PROGRAM_NAME);
+        printf("Author: %s\n", AUTHOR);
+        printf("License: %s\n\n", LICENSE);
+        printf("Usage: snapshot [options] [path]\n\n");
+        printf("Options:\n");
+        printf("  -s, --store        Store a new snapshot\n");
+        printf("  -r, --restore      Restore from a snapshot\n");
+        printf("  -R, --revision=N   Specify revision number for restore/compare\n");
+        printf("  -d, --discard      Discard specified snapshot\n");
+        printf("  -l, --list         List available snapshots\n");
+        printf("  -c, --compare      Compare current state with snapshot\n");
+        printf("  -h, --help         Display this help message\n");
 }
 
 static void print_usage(const char *program_name)
 {
-        printf("Usage: %s [-v] [-m mode] [-h help] [path, path, ...]\n", program_name);
+        printf("Usage: %s [-s store] [-r restore] [-d discard]\n    [-l list] [-c compare] [-R revision] [-h help]\n", program_name);
 }
 
 void print_args() 
