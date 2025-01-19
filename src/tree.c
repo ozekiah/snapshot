@@ -460,7 +460,6 @@ int restore_directory(struct tree *tree, const char *dir_path)
                         
                         if (chown(full_path, entry->blob->uid, entry->blob->gid) < 0) {
                                 perror("chown");
-                                // Don't return -1 here as chown might fail without root privileges
                         }
 
                         struct timespec times[2] = {entry->blob->atime, entry->blob->mtime};

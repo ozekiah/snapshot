@@ -126,7 +126,8 @@ static int parse_options(int argc, char *argv[])
 
 static void print_help()
 {
-        printf("%s - snapshot utility tool\n", PROGRAM_NAME);
+        printf("%s:\n", PROGRAM_NAME);
+        printf("Description: %s\n", DESCRIPTION);
         printf("Author: %s\n", AUTHOR);
         printf("License: %s\n\n", LICENSE);
         printf("Usage: snapshot [options] [path]\n\n");

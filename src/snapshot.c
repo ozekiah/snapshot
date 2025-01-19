@@ -45,12 +45,13 @@ int create_snapshot(const char *dir_path)
                 struct revision *base = load_revision_from_file(base_path);
                 if (!base) {
                         perror("load revision");
+                        fprintf(stderr, "failed to load revision from file: %s\n", base_path);
                         return 1;
                 }
 
                 struct revision *delta = create_delta_revision(rev_dir, base, dir_path);
                 if (!delta) {
-                        perror("create delta");
+                        fprintf(stderr, "failed to create delta file: %s\n", dir_path);
                         free_revision(base);
                         return 1;
                 }
@@ -59,7 +60,7 @@ int create_snapshot(const char *dir_path)
                 snprintf(delta_path, sizeof(delta_path), "%s/revision_%d", rev_dir, delta->version);
 
                 if (save_revision_to_file(delta_path, delta) != 0) {
-                        perror("failed to save delta revision");
+                        fprintf(stderr, "failed to delta revision: %s\n", delta_path);
                         free_revision(delta);
                         free_revision(base);
                         return 1;

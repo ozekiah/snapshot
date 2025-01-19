@@ -249,13 +249,6 @@ void free_revision(struct revision *rev)
         free(rev);
 }
 
-void print_usage(const char *program) 
-{
-        fprintf(stderr, "Usage:\n");
-        fprintf(stderr, "  Save current state:   %s -s <revisions_dir> <directory>\n", program);
-        fprintf(stderr, "  Restore a revision:   %s -r <revisions_dir> <revision_number> <output_directory>\n", program);
-}
-
 int restore_specific_revision(const char *rev_dir, int target_version, const char *output_dir) 
 {
         char rev_path[PATH_MAX];
