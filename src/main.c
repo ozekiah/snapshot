@@ -9,7 +9,8 @@
 #include "snapshot.h"
 #include "config.h"
 
-#define PROGRAM_NAME "Snapshot"
+#define PROGRAM_NAME "SVD"
+#define DESCRIPTION "Save Directory"
 #define AUTHOR "Ozekiah"
 #define LICENSE "GNU GPL v2.0"
 
