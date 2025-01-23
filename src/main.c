@@ -27,32 +27,6 @@ struct options opts = {
         .help = 0
 };
 
-static int get_path(int argc)
-{
-        if (optind >= argc) {
-                char cwd[PATH_MAX];
-                if (getcwd(cwd, PATH_MAX) == NULL) {
-                        perror("getcwd");
-                        return 1;
-                }
-                
-                opts.path = strdup(cwd);
-                if (opts.path == NULL) {
-                        perror("strdup");
-                        return 1;
-                }
-                return 0;
-        }
-
-        opts.path = strdup(optarg);
-        if (opts.path == NULL) {
-                perror("strdup");
-                return 1;
-        }
-        
-        return 0;
-}
-
 static int parse_options(int argc, char *argv[])
 {
         int opt;
@@ -72,15 +46,11 @@ static int parse_options(int argc, char *argv[])
         while ((opt = getopt_long(argc, argv, "s:r:R:d:l:c:h", long_options, NULL)) != -1) {
                 switch (opt) {
                 case 's':
-                        if (get_path(argc) != 0) {
-                            return 1;
-                        }
+                        opts.path = strdup(optarg);
                         opts.store = 1;
                         break;
                 case 'r':
-                        if (get_path(argc) != 0) {
-                            return 1;
-                        }
+                        opts.path = strdup(optarg);
                         opts.restore = 1;
                         break;
                 case 'R':
@@ -95,21 +65,17 @@ static int parse_options(int argc, char *argv[])
                         }
                         break;
                 case 'd':
-                        if (get_path(argc) != 0) {
+                        if (get_path(argc, argv) != 0) {
                             return 1;
                         }
                         opts.discard = 1;
                         break;
                 case 'l':
-                        if (get_path(argc) != 0) {
-                            return 1;
-                        }
+                        opts.path = strdup(optarg);
+                        opts.store = 1;
                         opts.list = 1;
                         break;
                 case 'c':
-                        if (get_path(argc) != 0) {
-                            return 1;
-                        }
                         opts.compare = 1;
                         break;
                 case 'h':
@@ -130,7 +96,7 @@ static void print_help()
         printf("Description: %s\n", DESCRIPTION);
         printf("Author: %s\n", AUTHOR);
         printf("License: %s\n\n", LICENSE);
-        printf("Usage: snapshot [options] [path]\n\n");
+        printf("Usage: %s [options] [path]\n\n", PROGRAM_NAME);
         printf("Options:\n");
         printf("  -s, --store        Store a new snapshot\n");
         printf("  -r, --restore      Restore from a snapshot\n");
@@ -160,7 +126,6 @@ void print_args()
 
 int main(int argc, char *argv[])
 {
-        // TODO: check that the config file exists and the file structure is correct
         (void)deserialize_config(&config, "/etc/snapshot/config.yaml");
 
         if (parse_options(argc, argv) != 0) {

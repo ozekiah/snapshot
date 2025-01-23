@@ -14,6 +14,11 @@
 
 int create_snapshot(const char *dir_path)
 {       
+        if (!path_exists(dir_path)) {
+                fprintf(stderr, "Error: Targetted directory does not exist.\n");
+                return 1;
+        }
+
         long int inode = get_dir_inode(dir_path);
         char rev_dir[PATH_MAX];
         snprintf(rev_dir, PATH_MAX, "%s/%ld", config.path, inode);
