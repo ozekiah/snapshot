@@ -1,5 +1,6 @@
 #include <archive.h>
-#include <archive_entry.h>
+#include <archive_entry.h> 
+#include <zlib.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -102,6 +103,8 @@ int create_tar_xz(const char *src, const char *dst)
         return 0;
 }
 
+
+
 long int get_dir_inode(const char *dir_path)
 {
         struct stat dir_stat;
@@ -111,6 +114,37 @@ long int get_dir_inode(const char *dir_path)
         }
 
         return dir_stat.st_ino;
+}
+
+int deflate_file(const char *src_path, const char *dst_path)
+{
+        FILE *src = fopen(src_path, "rb");
+        FILE *dst = fopen(dst_path, "wb");
+        if (!src || !dst) return -1;
+
+        z_stream strm = { 0 };
+        deflateInit(&strm, Z_DEFAULT_COMPRESSION);
+
+        unsigned char src_buf[16384];
+        unsigned char dst_buf[16384];
+        int ret;
+
+        do {
+                strm.avail_in = fread(src_buf, 1, sizeof(src_buf), src);
+                if (ferror(src)) return -1;
+                strm.next_in = src_buf;
+
+                do {
+                        strm.avail_out = sizeof(dst_buf);
+                        strm.next_out = dst_buf;
+                        ret = deflate(&strm, feof(src) ? Z_FINISH : Z_NO_FLUSH);
+                        fwrite(dst_buf, 1, sizeof(dst_buf) - strm.avail_out, dst);                } while (strm.avail_out == 0);
+        } while (ret != Z_STREAM_END);
+
+        deflateEnd(&strm);
+        fclose(src);
+        fclose(dst);
+        return 0;
 }
 
 int path_exists(const char *path) 
