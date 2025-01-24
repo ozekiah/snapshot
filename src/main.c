@@ -65,9 +65,7 @@ static int parse_options(int argc, char *argv[])
                         }
                         break;
                 case 'd':
-                        if (get_path(argc, argv) != 0) {
-                            return 1;
-                        }
+                        opts.path = strdup(optarg);
                         opts.discard = 1;
                         break;
                 case 'l':

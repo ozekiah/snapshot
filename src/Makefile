@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -g
 
 TARGET = svd 
-LIBS = -larchive -lyaml -lcrypto
+LIBS = -larchive -lyaml -lcrypto -lz
 SRCS = main.c snapshot.c config.c fs.c utils.c revision.c delta.c tree.c
 OBJS = $(SRCS:.c=.o)
 
