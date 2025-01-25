@@ -21,7 +21,7 @@ int create_snapshot(const char *dir_path)
 
         long int inode = get_dir_inode(dir_path);
         char rev_dir[PATH_MAX];
-        snprintf(rev_dir, PATH_MAX, "%s/%ld", config.path, inode);
+        snprintf(rev_dir, PATH_MAX, "%s/%ld", config.revisions, inode);
 
         if (mkdir(rev_dir, 0777) < 0 && errno != EEXIST) {
                 perror("mkdir");
@@ -37,6 +37,7 @@ int create_snapshot(const char *dir_path)
                         perror("create base");
                         return 1;
                 }
+                
 
                 if (save_revision_to_file(base_path, base) != 0) {
                         perror("save revision");
@@ -83,6 +84,6 @@ int restore_snapshot(const char *dir_path, const int version)
 {
         long int inode = get_dir_inode(dir_path);
         char rev_dir[PATH_MAX];
-        snprintf(rev_dir, sizeof(rev_dir), "%s/%ld", config.path, inode);
+        snprintf(rev_dir, sizeof(rev_dir), "%s/%ld", config.revisions, inode);
         return (int)restore_specific_revision(rev_dir, version, dir_path);
 }

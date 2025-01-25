@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "fs.h"
 
 static void add_file_to_archive(struct archive *a, const char *path, const char *base)
 {
@@ -178,6 +179,24 @@ int inflate_file(const char *src_path, const char *dst_path)
         fclose(src);
         fclose(dst);
         return 0;
+}
+
+int tmp_inflate_file(const char *src_path, const char *dst_path)
+{
+        char tmp_dst_path[PATH_MAX];
+        snprintf(tmp_dst_path, PATH_MAX, "/tmp/%s.tmp", src_path);
+
+        if (inflate_file(src_path, tmp_dst_path) != 0) {
+                fprintf(stderr, "failed to deflaite file: %s", src_path);
+                return -1;
+        }
+        
+        return 0;
+}
+
+void cleanup_tmp_files()
+{
+       // TODO; 
 }
 
 int path_exists(const char *path) 

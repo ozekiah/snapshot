@@ -124,7 +124,7 @@ void print_args()
 
 int main(int argc, char *argv[])
 {
-        (void)deserialize_config(&config, "/etc/snapshot/config.yaml");
+        (void)deserialize_config(&config, "/etc/svd/config");
 
         if (parse_options(argc, argv) != 0) {
                 print_usage(argv[0]);
