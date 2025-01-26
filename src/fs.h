@@ -9,5 +9,6 @@ int deflate_file(const char *src_path, const char *dst_path);
 int inflate_file(const char *src_path, const char *dst_path);
 int tmp_inflate_file(const char *src_path, const char *dst_path);
 int path_exists(const char *path);
+int remove_dir(const char *path);
 
 #endif

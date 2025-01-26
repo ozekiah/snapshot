@@ -131,20 +131,29 @@ int main(int argc, char *argv[])
                 return 1;
         }
 
-        print_args();
+        // print_args();
 
         if (opts.help) {
                 print_help();
-                return 0;
+                goto cleanup;
         }
 
         if (opts.store) {
                 create_snapshot(opts.path);
+                goto cleanup;
         } 
 
         if (opts.restore) {
                 restore_snapshot(opts.path, opts.revision);
+                goto cleanup;
         }
+
+        if (opts.discard) {
+                discard_snapshot(opts.path);
+                goto cleanup;
+        }
+
+cleanup:
 
         free(opts.path);
         return 0;

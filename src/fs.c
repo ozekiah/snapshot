@@ -204,3 +204,30 @@ int path_exists(const char *path)
         struct stat buffer;
         return (stat(path, &buffer) == 0);
 }
+                
+int remove_dir(const char *path)
+{
+        DIR *d = opendir(path);
+        if (!d) return -1;
+    
+        struct dirent *p;
+        char file_path[1024];
+        int len = strlen(path);
+    
+        while ((p = readdir(d))) {
+                if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, ".."))
+                 continue;
+
+                snprintf(file_path, sizeof(file_path), "%s/%s", path, p->d_name);
+                struct stat statbuf;
+                stat(file_path, &statbuf);
+
+                if (S_ISDIR(statbuf.st_mode))
+                        remove_dir(file_path);
+                else
+                        unlink(file_path);
+        }
+    
+        closedir(d);
+        return rmdir(path);
+}
