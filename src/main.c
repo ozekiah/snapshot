@@ -70,7 +70,6 @@ static int parse_options(int argc, char *argv[])
                         break;
                 case 'l':
                         opts.path = strdup(optarg);
-                        opts.store = 1;
                         opts.list = 1;
                         break;
                 case 'c':
@@ -150,6 +149,11 @@ int main(int argc, char *argv[])
 
         if (opts.discard) {
                 discard_snapshot(opts.path);
+                goto cleanup;
+        }
+
+        if (opts.list) {
+                list_snapshot(opts.path);
                 goto cleanup;
         }
 

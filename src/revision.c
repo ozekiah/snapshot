@@ -159,6 +159,40 @@ struct revision *create_delta_revision(const char *rev_dir, struct revision *bas
         return rev;
 }
 
+struct revision **get_revisions(const char *rev_dir, size_t *count)
+{
+        *count = 0;
+        char rev_path[PATH_MAX];
+       
+        while (1) {
+                snprintf(rev_path, PATH_MAX, "%s/revision_%zu", rev_dir, *count);
+                FILE *test = fopen(rev_path, "r");
+                if (test == NULL) {
+                        break;
+                }
+                fclose(test);
+                (*count)++;
+        }
+
+        struct revision **revisions = malloc((*count + 1) * sizeof(struct revision*));
+        if (!revisions) return NULL;
+
+        for (int i = 0; i < *count; i++) {
+                snprintf(rev_path, PATH_MAX, "%s/revision_%d", rev_dir, i);
+                revisions[i] = load_revision_from_file(rev_path);
+                if (!revisions[i]) {
+                        for (int j = 0; j < i; j++) {
+                                free_revision(revisions[j]);
+                        }
+                        free(revisions);
+                        return NULL;
+                }
+        }
+
+        revisions[*count] = NULL;
+        return revisions;
+}
+
 int save_revision_to_file(const char *filepath, struct revision *rev)
 {
         if (!filepath || !rev) return -1;

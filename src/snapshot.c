@@ -96,3 +96,17 @@ int discard_snapshot(const char *dir_path)
         snprintf(rev_dir, sizeof(rev_dir), "%s/%ld", config.revisions, inode);
         return (int)remove_dir(rev_dir);
 }
+
+int list_snapshot(const char *dir_path) 
+{       
+        long int inode = get_dir_inode(dir_path);
+        char rev_dir[PATH_MAX];
+        snprintf(rev_dir, sizeof(rev_dir), "%s/%ld", config.revisions, inode);
+        
+        size_t count;
+        struct revision **revisions = get_revisions(rev_dir, &count);
+        
+        printf("count: %d\n", count);
+
+        return 0;
+}
