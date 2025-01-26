@@ -9,8 +9,9 @@
 #include <openssl/sha.h>
 
 struct blob {
-        char type[5]; 
-        size_t size;
+        char type[5];
+        size_t size;  
+        size_t compressed_size;
         unsigned char *data;
         mode_t mode;
         uid_t uid;

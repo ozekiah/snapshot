@@ -8,11 +8,13 @@
 #include <dirent.h>
 #include <utime.h>
 #include <errno.h>
+#include <zlib.h>
 #include <openssl/sha.h>
+#include "main.h"
 #include "tree.h"
 #include "delta.h"
 
-struct blob *create_blob(const char* file_path) 
+struct blob *create_blob(const char* file_path)
 {
         struct stat st;
         if (lstat(file_path, &st) < 0) {
@@ -33,24 +35,49 @@ struct blob *create_blob(const char* file_path)
                 return NULL;
         }
 
-        blob->size = st.st_size;
-        blob->data = malloc(st.st_size);
-        if (!blob->data) {
+        unsigned char *raw_data = malloc(st.st_size);
+        if (!raw_data) {
                 perror("malloc");
                 fclose(file);
                 free(blob);
                 return NULL;
         }
 
-        if (fread(blob->data, 1, st.st_size, file) != st.st_size) {
+        if (fread(raw_data, 1, st.st_size, file) != st.st_size) {
                 perror("fread");
+                free(raw_data);
                 fclose(file);
-                free(blob->data);
                 free(blob);
                 return NULL;
         }
-
         fclose(file);
+
+        blob->size = st.st_size;
+
+        if (config.compress_files) {
+                uLong compressed_size = compressBound(st.st_size);
+                unsigned char *compressed_data = malloc(compressed_size);
+                if (!compressed_data) {
+                        perror("malloc");
+                        free(raw_data);
+                        free(blob);
+                        return NULL;
+                }
+
+                if (compress(compressed_data, &compressed_size, raw_data, st.st_size) != Z_OK) {
+                        free(compressed_data);
+                        free(raw_data);
+                        free(blob);
+                        return NULL;
+                }
+
+                blob->data = compressed_data;
+                blob->compressed_size = compressed_size;
+                free(raw_data);
+        } else {
+                blob->data = raw_data;
+                blob->compressed_size = st.st_size;
+        }
 
         strcpy(blob->type, "blob");
         blob->mode = st.st_mode;
@@ -269,9 +296,7 @@ void free_tree(struct tree *t)
 
 int serialize_tree(FILE *out, struct tree *tree) 
 {
-        if (!tree || !out) {
-                return -1;
-        }
+        if (!tree || !out) return -1;
 
         if (fwrite(&tree->type, sizeof(tree->type), 1, out) != 1 ||
             fwrite(&tree->entry_count, sizeof(tree->entry_count), 1, out) != 1) {
@@ -289,7 +314,8 @@ int serialize_tree(FILE *out, struct tree *tree)
 
                 if (strcmp(entry->type, "blob") == 0 && entry->blob) {
                         if (fwrite(&entry->blob->size, sizeof(entry->blob->size), 1, out) != 1 ||
-                            fwrite(entry->blob->data, 1, entry->blob->size, out) != entry->blob->size ||
+                            fwrite(&entry->blob->compressed_size, sizeof(entry->blob->compressed_size), 1, out) != 1 ||
+                            fwrite(entry->blob->data, 1, entry->blob->compressed_size, out) != entry->blob->compressed_size ||
                             fwrite(&entry->blob->mode, sizeof(entry->blob->mode), 1, out) != 1 ||
                             fwrite(&entry->blob->uid, sizeof(entry->blob->uid), 1, out) != 1 ||
                             fwrite(&entry->blob->gid, sizeof(entry->blob->gid), 1, out) != 1 ||
@@ -304,23 +330,17 @@ int serialize_tree(FILE *out, struct tree *tree)
                                 return -1;
                         }
                 }
-
                 entry = entry->next;
         }
-
         return 0;
 }
 
 int deserialize_tree(FILE *in, struct tree **tree) 
 {
-        if (!in || !tree) {
-                return -1;
-        }
+        if (!in || !tree) return -1;
 
         *tree = malloc(sizeof(struct tree));
-        if (!*tree) {
-                return -1;
-        }
+        if (!*tree) return -1;
 
         if (fread(&(*tree)->type, sizeof((*tree)->type), 1, in) != 1 ||
             fread(&(*tree)->entry_count, sizeof((*tree)->entry_count), 1, in) != 1) {
@@ -363,7 +383,8 @@ int deserialize_tree(FILE *in, struct tree **tree)
                                 return -1;
                         }
 
-                        if (fread(&entry->blob->size, sizeof(entry->blob->size), 1, in) != 1) {
+                        if (fread(&entry->blob->size, sizeof(entry->blob->size), 1, in) != 1 ||
+                            fread(&entry->blob->compressed_size, sizeof(entry->blob->compressed_size), 1, in) != 1) {
                                 free(entry->blob);
                                 free(entry);
                                 free_tree(*tree);
@@ -371,7 +392,7 @@ int deserialize_tree(FILE *in, struct tree **tree)
                                 return -1;
                         }
 
-                        entry->blob->data = malloc(entry->blob->size);
+                        entry->blob->data = malloc(entry->blob->compressed_size);
                         if (!entry->blob->data) {
                                 free(entry->blob);
                                 free(entry);
@@ -380,7 +401,7 @@ int deserialize_tree(FILE *in, struct tree **tree)
                                 return -1;
                         }
 
-                        if (fread(entry->blob->data, 1, entry->blob->size, in) != entry->blob->size ||
+                        if (fread(entry->blob->data, 1, entry->blob->compressed_size, in) != entry->blob->compressed_size ||
                             fread(&entry->blob->mode, sizeof(entry->blob->mode), 1, in) != 1 ||
                             fread(&entry->blob->uid, sizeof(entry->blob->uid), 1, in) != 1 ||
                             fread(&entry->blob->gid, sizeof(entry->blob->gid), 1, in) != 1 ||
@@ -407,7 +428,6 @@ int deserialize_tree(FILE *in, struct tree **tree)
                 *last_entry = entry;
                 last_entry = &entry->next;
         }
-
         return 0;
 }
 
@@ -440,16 +460,43 @@ int restore_directory(struct tree *tree, const char *dir_path)
                                 return -1;
                         }
 
+                        unsigned char *write_data;
+                        size_t write_size;
+
+                        if (config.compress_files && entry->blob->size != entry->blob->compressed_size) {
+                                write_data = malloc(entry->blob->size);
+                                if (!write_data) return -1;
+
+                                uLong uncomp_size = entry->blob->size;
+                                if (uncompress(write_data, &uncomp_size, entry->blob->data, 
+                                             entry->blob->compressed_size) != Z_OK) {
+                                        free(write_data);
+                                        return -1;
+                                }
+                                write_size = uncomp_size;
+                        } else {
+                                write_data = entry->blob->data;
+                                write_size = entry->blob->size;
+                        }
+
                         FILE *file = fopen(full_path, "wb");
                         if (!file) {
+                                if (config.compress_files && write_data != entry->blob->data) 
+                                        free(write_data);
                                 perror("fopen");
                                 return -1;
                         }
                         
-                        if (fwrite(entry->blob->data, 1, entry->blob->size, file) != entry->blob->size) {
+                        if (fwrite(write_data, 1, write_size, file) != write_size) {
+                                if (config.compress_files && write_data != entry->blob->data) 
+                                        free(write_data);
                                 perror("fwrite");
                                 fclose(file);
                                 return -1;
+                        }
+
+                        if (config.compress_files && write_data != entry->blob->data) {
+                                free(write_data);
                         }
                         fclose(file);
 
@@ -468,9 +515,7 @@ int restore_directory(struct tree *tree, const char *dir_path)
                                 return -1;
                         }
                 }
-
                 entry = entry->next;
         }
-
         return 0;
 }
