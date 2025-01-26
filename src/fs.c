@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "fs.h"
 
 static void add_file_to_archive(struct archive *a, const char *path, const char *base)
 {
@@ -138,13 +139,64 @@ int deflate_file(const char *src_path, const char *dst_path)
                         strm.avail_out = sizeof(dst_buf);
                         strm.next_out = dst_buf;
                         ret = deflate(&strm, feof(src) ? Z_FINISH : Z_NO_FLUSH);
-                        fwrite(dst_buf, 1, sizeof(dst_buf) - strm.avail_out, dst);                } while (strm.avail_out == 0);
+                        fwrite(dst_buf, 1, sizeof(dst_buf) - strm.avail_out, dst);                
+                } while (strm.avail_out == 0);
         } while (ret != Z_STREAM_END);
 
         deflateEnd(&strm);
         fclose(src);
         fclose(dst);
         return 0;
+}
+
+int inflate_file(const char *src_path, const char *dst_path) 
+{
+        FILE *src = fopen(src_path, "rb");
+        FILE *dst = fopen(dst_path, "wb");
+        if (!src || !dst) return -1;
+
+        z_stream strm = {0};
+        inflateInit(&strm);
+
+        unsigned char src_buf[16384];
+        unsigned char dst_buf[16384];
+        int ret;
+
+        do {
+                strm.avail_in = fread(src_buf, 1, sizeof(src_buf), src);
+                if (ferror(src)) return -1;
+                strm.next_in = src_buf;
+
+                do {
+                        strm.avail_out = sizeof(dst_buf);
+                        strm.next_out = dst_buf;
+                        ret = inflate(&strm, Z_NO_FLUSH);
+                        fwrite(dst_buf, 1, sizeof(dst_buf) - strm.avail_out, dst);
+                } while (strm.avail_out == 0);
+        } while (ret != Z_STREAM_END);
+
+        inflateEnd(&strm);
+        fclose(src);
+        fclose(dst);
+        return 0;
+}
+
+int tmp_inflate_file(const char *src_path, const char *dst_path)
+{
+        char tmp_dst_path[PATH_MAX];
+        snprintf(tmp_dst_path, PATH_MAX, "/tmp/%s.tmp", src_path);
+
+        if (inflate_file(src_path, tmp_dst_path) != 0) {
+                fprintf(stderr, "failed to deflaite file: %s", src_path);
+                return -1;
+        }
+        
+        return 0;
+}
+
+void cleanup_tmp_files()
+{
+       // TODO; 
 }
 
 int path_exists(const char *path) 

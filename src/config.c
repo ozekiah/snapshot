@@ -31,20 +31,16 @@ void serialize_config(const struct config *cfg, const char *filename)
 
         yaml_mapping_start_event_initialize(&event, NULL, NULL, 1, YAML_BLOCK_MAPPING_STYLE);
         yaml_emitter_emit(&emitter, &event);
-        yaml_scalar_event_initialize(&event, NULL, NULL, (unsigned char *)"path", strlen("path"), 1, 1, YAML_PLAIN_SCALAR_STYLE);
+        yaml_scalar_event_initialize(&event, NULL, NULL, (unsigned char *)"revisions", strlen("revisions"), 1, 1, YAML_PLAIN_SCALAR_STYLE);
         yaml_emitter_emit(&emitter, &event);
-        yaml_scalar_event_initialize(&event, NULL, NULL, (unsigned char *)cfg->path, strlen(cfg->path), 1, 1, YAML_PLAIN_SCALAR_STYLE);
+        yaml_scalar_event_initialize(&event, NULL, NULL, (unsigned char *)cfg->revisions, strlen(cfg->revisions), 1, 1, YAML_PLAIN_SCALAR_STYLE);
         yaml_emitter_emit(&emitter, &event);
-        yaml_scalar_event_initialize(&event, NULL, NULL, (unsigned char *)"format", strlen("format"), 1, 1, YAML_PLAIN_SCALAR_STYLE);
-        yaml_emitter_emit(&emitter, &event);
-        yaml_scalar_event_initialize(&event, NULL, NULL, (unsigned char *)cfg->format, strlen(cfg->format), 1, 1, YAML_PLAIN_SCALAR_STYLE);
-        yaml_emitter_emit(&emitter, &event);
-        yaml_scalar_event_initialize(&event, NULL, NULL, (unsigned char *)"limit", strlen("limit"), 1, 1, YAML_PLAIN_SCALAR_STYLE);
+        yaml_scalar_event_initialize(&event, NULL, NULL, (unsigned char *)"compress_files", strlen("compress_files"), 1, 1, YAML_PLAIN_SCALAR_STYLE);
         yaml_emitter_emit(&emitter, &event);
 
-        char limit_str[20];
-        snprintf(limit_str, sizeof(limit_str), "%d", cfg->limit);
-        yaml_scalar_event_initialize(&event, NULL, NULL, (unsigned char *)limit_str, strlen(limit_str), 1, 1, YAML_PLAIN_SCALAR_STYLE);
+        char compress_files_str[20];
+        snprintf(compress_files_str, sizeof(compress_files_str), "%d", cfg->compress_files);
+        yaml_scalar_event_initialize(&event, NULL, NULL, (unsigned char *)compress_files_str, strlen(compress_files_str), 1, 1, YAML_PLAIN_SCALAR_STYLE);
         yaml_emitter_emit(&emitter, &event);
         yaml_mapping_end_event_initialize(&event);
         yaml_emitter_emit(&emitter, &event);
@@ -84,12 +80,10 @@ void deserialize_config(struct config *cfg, const char *filename)
                                 strncpy(key, value, sizeof(key) - 1);
                                 key[sizeof(key) - 1] = '\0';
                         } else {
-                                if (strcmp(key, "path") == 0) {
-                                cfg->path = strdup(value);
-                        } else if (strcmp(key, "format") == 0) {
-                                cfg->format = strdup(value);
-                        } else if (strcmp(key, "limit") == 0) {
-                                cfg->limit = atoi(value);
+                                if (strcmp(key, "revisions") == 0) {
+                                cfg->revisions = strdup(value);
+                        } else if (strcmp(key, "compress_files") == 0) {
+                                cfg->compress_files = atoi(value);
                         }
                         
                         key[0] = '\0'; 

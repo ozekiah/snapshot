@@ -2,9 +2,8 @@
 #define CONFIG_H
 
 struct config {
-        char *path;
-        char *format;
-        int limit;
+        char *revisions;
+        int compress_files;
 };
 
 void serialize_config(const struct config *cfg, const char *filename);
