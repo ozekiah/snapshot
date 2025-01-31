@@ -519,3 +519,95 @@ int restore_directory(struct tree *tree, const char *dir_path)
         }
         return 0;
 }
+
+void print_indentation(int depth)
+{
+        for (int i = 0; i < depth && i < 100; i++) {
+                printf("  ");
+        }
+}
+
+int print_tree_entry(struct tree_entry *entry, int depth, int *total_entries) 
+{
+        if (!entry) return 0;
+        if (depth >= 100) {
+                printf("Warning: Maximum depth reached. Tree may be corrupted or contain cycles.\n");
+                return -1;
+        }
+
+        if (total_entries && *total_entries > 1000000) {  // Arbitrary large number to prevent infinite loops
+                        printf("Warning: Too many entries. Tree may contain cycles.\n");
+                return -1;
+        }
+
+        // Print indentation based on depth
+        print_indentation(depth);
+
+        // Print entry information
+        printf("%s %s %s ", entry->mode, entry->type, entry->name);
+
+        // Print hash in hex format
+        for (int i = 0; i < SHA_DIGEST_LENGTH; i++) {
+                printf("%02x", entry->hash[i]);
+        }
+        printf("\n");
+
+        // If this entry has a blob, print its details
+        if (entry->blob) {
+                print_indentation(depth + 1);
+                printf("Blob: type=%s size=%zu compressed=%zu\n", 
+                       entry->blob->type,
+                       entry->blob->size,
+                       entry->blob->compressed_size);
+
+                if (entry->blob->link_target) {
+                        print_indentation(depth + 1);
+                        printf("-> %s\n", entry->blob->link_target);
+                }
+        }
+
+        if (entry->subtree) {
+                print_indentation(depth + 1);
+                printf("Subtree:\n");
+                if (print_tree(entry->subtree, depth + 2, total_entries) != 0) {
+                        return -1;
+                }
+        }
+
+        if (total_entries) {
+                (*total_entries)++;
+        }
+
+        return print_tree_entry(entry->next, depth, total_entries);
+}
+
+int print_tree(struct tree *tree, int depth, int *total_entries) 
+{
+        if (!tree) return 0;
+                if (depth >= 100) {
+                        printf("Warning: Maximum depth reached. Tree may be corrupted or contain cycles.\n");
+                        return -1;
+                }
+
+                print_indentation(depth);
+                printf("Tree: type=%s entries=%zu hash=", tree->type, tree->entry_count);
+
+                // Print tree hash
+                for (int i = 0; i < SHA_DIGEST_LENGTH; i++) {
+                        printf("%02x", tree->hash[i]);
+                }
+                printf("\n");
+
+                if (tree->entries) {
+                return print_tree_entry(tree->entries, depth + 1, total_entries);
+        }
+
+        return 0;
+}
+
+int print_tree_structure(struct tree *root) 
+{
+        printf("Tree Structure:\n");
+        int total_entries = 0;
+        return print_tree(root, 0, &total_entries);
+}

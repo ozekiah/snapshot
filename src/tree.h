@@ -10,7 +10,7 @@
 
 struct blob {
         char type[5];
-        size_t size;  
+        size_t size;
         size_t compressed_size;
         unsigned char *data;
         mode_t mode;
@@ -51,5 +51,7 @@ int serialize_tree(FILE *out, struct tree *tree);
 int deserialize_tree(FILE *in, struct tree **tree);
 int restore_directory(struct tree *tree, const char *dir_path);
 struct tree_entry *clone_tree_entry(const struct tree_entry *original);
+int print_tree(struct tree *tree, int depth, int *total_entries);
+int print_tree_structure(struct tree *root);
 
 #endif

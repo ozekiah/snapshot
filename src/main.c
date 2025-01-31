@@ -158,7 +158,6 @@ int main(int argc, char *argv[])
         }
 
 cleanup:
-
         free(opts.path);
         return 0;
 }

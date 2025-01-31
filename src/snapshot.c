@@ -11,6 +11,7 @@
 #include "main.h"
 #include "utils.h"
 #include "revision.h"
+#include "tree.h"
 
 int create_snapshot(const char *dir_path)
 {       
@@ -97,6 +98,11 @@ int discard_snapshot(const char *dir_path)
         return (int)remove_dir(rev_dir);
 }
 
+static void print_revision_details(struct revision *revision)
+{
+       print_tree_structure(revision->base_tree); 
+}
+
 int list_snapshot(const char *dir_path) 
 {       
         long int inode = get_dir_inode(dir_path);
@@ -106,7 +112,10 @@ int list_snapshot(const char *dir_path)
         size_t count;
         struct revision **revisions = get_revisions(rev_dir, &count);
         
-        printf("count: %d\n", count);
+        printf("count: %zu\n", count);
+        for (size_t i = 0; i < count; i++) {
+                print_revision_details(revisions[i]);
+        }
 
         return 0;
 }

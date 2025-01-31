@@ -4,8 +4,6 @@
 #include <string.h>
 #include <limits.h>
 #include <sys/stat.h>
-#include <errno.h>
-
 #include "revision.h"
 #include "delta.h"
 #include "tree.h"
